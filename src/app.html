@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="description" content="" />
+    <link rel="icon" href="%svelte.assets%/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      document.addEventListener('contextmenu', function (e) {
+        // e.preventDefault();
+      });
+    </script>
+    <style>
+      ::-webkit-scrollbar-track {
+        background-color: transparent;
+      }
+
+      ::-webkit-scrollbar {
+        width: 6px;
+        background-color: #222222;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        border-radius: 3px;
+        background-image: linear-gradient(to bottom, #38bdf8, #67e8f9);
+      }
+    </style>
+    %svelte.head%
+  </head>
+  <body>
+    <div>%svelte.body%</div>
+  </body>
+</html>
