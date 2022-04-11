@@ -1,11 +1,11 @@
 [package]
-name = "app"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
-default-run = "app"
+name = "subrename"
+version = "0.1.1"
+description = "Rename subtitle files to match the video files."
+authors = ["Liuming Chen"]
+license = "MIT"
+repository = "https://github.com/let-lc/SubRename "
+default-run = "subrename"
 edition = "2021"
 rust-version = "1.57"
 

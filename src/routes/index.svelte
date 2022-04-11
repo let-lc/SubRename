@@ -1,4 +1,9 @@
-<script type="ts">
+<script type="ts" async>
+  import { open, message, confirm } from '@tauri-apps/api/dialog';
+  import { removeFile, readDir, readTextFile, renameFile, writeFile, type FileEntry } from '@tauri-apps/api/fs';
+
+  import type { ChangedFileEntry, HighlightFileEntry, LogItem, FileType } from 'src/app';
+
   import {
     RoundVideocam,
     RoundSubtitles,
@@ -8,20 +13,17 @@
     RoundRestartAlt,
     RoundDeleteSweep,
   } from '$lib/components/icons';
-
-  import { open, message, confirm } from '@tauri-apps/api/dialog';
-  import { removeFile, readDir, readTextFile, renameFile, writeFile } from '@tauri-apps/api/fs';
-
-  import type { FileEntry } from '@tauri-apps/api/fs';
-  import type { ChangedFileEntry, HighlightFileEntry, LogItem } from 'src/app';
-
   import { ActionButton, Input, ListBox, SelectPath } from '$lib/components';
-  import { filterFile, getFileExt, getFileName, sortFilenameCb } from '$lib/utils';
-
-  /**
-   * Video or subtitle type.
-   */
-  type VorSType = 'video' | 'subtitle';
+  import {
+    filterFile,
+    filterLogItems,
+    getFileExt,
+    getFileName,
+    getLogItems,
+    joinPaths,
+    loadFileFilter,
+    sortFilenameCb,
+  } from '$lib/utils';
 
   // Supported video extensions
   // prettier-ignore
@@ -30,7 +32,7 @@
   // prettier-ignore
   const SUBTITLE_EXT: Array<string> = ['aqt', 'ass', 'cvd', 'dks', 'idx', 'jss', 'mpl', 'pjs', 'psb', 'rt', 'smi', 'srt', 'ssa', 'ssf', 'sub', 'svcd', 'ttxt', 'txt', 'usf'];
 
-  const VORS_ZH: Record<VorSType, string> = { video: '视频', subtitle: '字幕' };
+  const FILE_TYPE_ZH: Record<FileType, string> = { video: '视频', subtitle: '字幕' };
 
   //#region state variables
   let sharePath: boolean = true;
@@ -77,13 +79,13 @@
   /**
    * Open and select a path.
    *
-   * @param vOrS video or subtitle
+   * @param fileType video or subtitle
    */
-  const selectPath = (vOrS: VorSType) => {
-    open({ directory: true, title: `选择 ${VORS_ZH[vOrS]} 文件夹:` })
+  const selectPath = (fileType: FileType) => {
+    open({ directory: true, title: `选择 ${FILE_TYPE_ZH[fileType]} 文件夹:` })
       .then((path) => {
         if (path) {
-          if (vOrS === 'video') {
+          if (fileType === 'video') {
             videoPath = (path as string) || '';
             if (sharePath) subtitlePath = videoPath; // sync subtitle path with video path
           } else {
@@ -101,19 +103,18 @@
    * Load files from path.
    *
    * @param path path string
-   * @param vOrS video or subtitle
+   * @param fileType video or subtitle
    */
-  const loadFiles = (path: string, vOrS: VorSType) => {
+  const loadFiles = (path: string, fileType: FileType) => {
     if (path) {
       readDir(path)
-        .then((files) => {
-          if (vOrS === 'video') {
-            videoFiles = files.filter(
-              (file) => !file.children && VIDEO_EXT.includes(getFileExt(file.name).toLowerCase())
-            );
+        .then(async (files) => {
+          const logitems = await getLogItems(videoPath);
+          if (fileType === 'video') {
+            videoFiles = files.filter((file) => loadFileFilter(file, VIDEO_EXT, filterLogItems(logitems, 'video')));
           } else {
-            subtitleFiles = files.filter(
-              (file) => !file.children && SUBTITLE_EXT.includes(getFileExt(file.name).toLowerCase())
+            subtitleFiles = files.filter((file) =>
+              loadFileFilter(file, SUBTITLE_EXT, filterLogItems(logitems, 'subtitle'))
             );
           }
         })
@@ -143,15 +144,13 @@
   /**
    * Rename a file.
    *
-   * @param vOrS rename a video or a subtitle file
+   * @param fileType rename a video or a subtitle file
    */
-  const rename = async (vOrS: VorSType) => {
+  const rename = async (fileType: FileType) => {
     if (noSelectWarning() || typeof navigator === 'undefined') return;
 
-    // Dynamic import is use here because "@tauri-apps/api/path" calls the os-check helper function during initialization,
-    // and it throws the "ReferenceError: navigator is not defined".
     const { join } = await import('@tauri-apps/api/path');
-    if (vOrS === 'video') {
+    if (fileType === 'video') {
       const newFileName = `${getFileName(selectSubtitle.name)}${postfix}.${getFileExt(selectedVideo.name)}`;
       const changedFile: ChangedFileEntry = {
         type: 'video',
@@ -184,7 +183,7 @@
    * @param changedFile changed file object.
    */
   const logAction = async (changedFile: ChangedFileEntry) => {
-    const renameLogPath = await (await import('@tauri-apps/api/path')).join(videoPath, 'subrename_log.json');
+    const renameLogPath = await joinPaths(videoPath, 'subrename_log.json');
     const newLogItem: LogItem = { video: selectedVideo, subtitle: selectSubtitle, change: changedFile };
 
     await readTextFile(renameLogPath)
@@ -274,7 +273,7 @@
    * Undo a previous rename action.
    */
   const undoOne = async () => {
-    const renameLogPath = await (await import('@tauri-apps/api/path')).join(videoPath, 'subrename_log.json');
+    const renameLogPath = await joinPaths(videoPath, 'subrename_log.json');
 
     readTextFile(renameLogPath)
       .then(async (text) => {
@@ -292,7 +291,7 @@
    * Undo all rename actions.
    */
   const undoAll = async () => {
-    const renameLogPath = await (await import('@tauri-apps/api/path')).join(videoPath, 'subrename_log.json');
+    const renameLogPath = await joinPaths(videoPath, 'subrename_log.json');
 
     readTextFile(renameLogPath)
       .then(async (text) => {
@@ -316,7 +315,7 @@
       return;
     }
     if (await confirm('删除重命名记录后将不能进行撤回操作，是否要删除？')) {
-      removeFile(await (await import('@tauri-apps/api/path')).join(videoPath, 'subrename_log.json'))
+      removeFile(await joinPaths(videoPath, 'subrename_log.json'))
         .then(() => {
           message('重命名记录删除成功！');
         })

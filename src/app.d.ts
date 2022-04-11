@@ -11,12 +11,17 @@ declare namespace App {
   // interface Stuff {}
 }
 
+/**
+ * Video or subtitle type.
+ */
+type FileType = 'video' | 'subtitle';
+
 interface HighlightFileEntry extends FileEntry {
   newName: string;
 }
 
 interface ChangedFileEntry extends FileEntry {
-  type: 'video' | 'subtitle';
+  type: FileType;
 }
 
 interface LogItem {
