@@ -63,7 +63,7 @@
 ## 环境需求
 
 - [Node.js](https://nodejs.org/zh-cn/) (推荐 v16+)
-- [Yarn](https://yarnpkg.com/)
+- [pnpm](https://pnpm.io/)
 - [Rust](https://www.rust-lang.org/)
 - [Cargo](https://crates.io/)
 
@@ -73,14 +73,16 @@ _**推荐跟着 [Tauri 官方文档](https://tauri.studio/docs/getting-started/p
 
 ```shell
 # 安装依赖
-yarn install
+pnpm install
 
 # 运行项目
-yarn dev
+pnpm dev
 
 # 项目打包
-yarn build
+pnpm build
 ```
+
+> PS：本项目使用 pnpm，但 `npm`, `yarn`, `pnpm` 都可以，请选择你喜欢包管理工具。
 
 ## 测试
 
