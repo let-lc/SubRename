@@ -67,7 +67,7 @@
 - [Rust](https://www.rust-lang.org/)
 - [Cargo](https://crates.io/)
 
-_**推荐跟着 [Tauri 官方文档](https://tauri.studio/docs/getting-started/prerequisites) 搭建环境。**_
+_**推荐跟着 [Tauri 官方文档](https://tauri.app/v1/guides/) 搭建环境。**_
 
 ## 项目运行
 
